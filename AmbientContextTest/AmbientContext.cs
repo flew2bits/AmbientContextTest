@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.Extensions.Options;
 
 namespace AmbientContextTest;
 
@@ -17,9 +18,9 @@ public record AmbientContext(int? Hid, int? Pid)
 
 // Attribute to mark page models that require ambient context
 [AttributeUsage(AttributeTargets.Class)]
-public class RequireAmbientContextAttribute(bool requireComplete = true) : Attribute
+public class RequireAmbientContextAttribute(string? policy = null) : Attribute
 {
-    public bool RequireComplete { get; } = requireComplete;
+    public string? Policy { get; } = policy;
 }
 
 // Service to manage ambient context
@@ -114,10 +115,18 @@ public class AmbientContextService(IHttpContextAccessor httpContextAccessor)
     }
 }
 
+public class AmbientContextOptions
+{
+    public Dictionary<string, Predicate<AmbientContext>> Policies { get; } = new()
+    {
+        ["__DEFAULT__"] = ctx => ctx.IsComplete
+    };
+}
+
 // Middleware to enforce ambient context
 public class AmbientContextMiddleware(RequestDelegate next, string contextSetupPath)
 {
-    public async Task InvokeAsync(HttpContext context, AmbientContextService contextService)
+    public async Task InvokeAsync(HttpContext context, AmbientContextService contextService, IOptions<AmbientContextOptions> options)
     {
         // Skip for the context setup page itself to avoid redirect loops
         if (context.Request.Path.StartsWithSegments(contextSetupPath, StringComparison.OrdinalIgnoreCase))
@@ -135,11 +144,13 @@ public class AmbientContextMiddleware(RequestDelegate next, string contextSetupP
         if (requireContextAttribute != null)
         {
             var ambientContext = await contextService.GetContextAsync(context);
+
+            var policyName = requireContextAttribute.Policy ?? "__DEFAULT__";
+            if (!options.Value.Policies.TryGetValue(policyName, out var policyPredicate))
+                throw new InvalidOperationException($"Could not find ambient context policy named {policyName}");
             
             // Check if context is complete or partial based on the attribute setting
-            var contextSatisfied = requireContextAttribute.RequireComplete 
-                ? ambientContext.IsComplete 
-                : (ambientContext.Hid.HasValue || ambientContext.Pid.HasValue);
+            var contextSatisfied = policyPredicate.Invoke(ambientContext);
             
             if (!contextSatisfied)
             {

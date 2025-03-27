@@ -1,0 +1,8 @@
+﻿@page
+@model AmbientContextTest.Pages.ParentRequiredPage
+
+@{
+}
+
+<div>H: @(Model.HouseholdId?.ToString() ?? "None")</div>
+<div>P: @Model.PersonId</div>

@@ -9,6 +9,11 @@ builder.Services.AddRazorPages().AddMvcOptions(opt =>
 });
 
 builder.Services.AddAmbientContext();
+builder.Services.Configure<AmbientContextOptions>(opt =>
+{
+    opt.Policies.Add("Partial", a => a.Hid.HasValue || a.Pid.HasValue);
+    opt.Policies.Add("ParentIdRequired", a => a.Pid.HasValue);
+});
 
 var app = builder.Build();
 

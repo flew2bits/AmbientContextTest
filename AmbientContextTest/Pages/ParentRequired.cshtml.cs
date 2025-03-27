@@ -3,18 +3,18 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace AmbientContextTest.Pages;
 
-[RequireAmbientContext("Partial")]
-public class PartialContextPage : PageModel
+[RequireAmbientContext("ParentIdRequired")]
+public class ParentRequiredPage : PageModel
 {
     private readonly AmbientContextService _contextService;
     
     [FromAmbientContext(nameof(AmbientContext.Pid))]
-    public int? PersonId { get; set; }
+    public int PersonId { get; set; }
     
     [FromAmbientContext(nameof(AmbientContext.Hid))]
     public int? HouseholdId { get; set; }
 
-    public PartialContextPage(AmbientContextService contextService)
+    public ParentRequiredPage(AmbientContextService contextService)
     {
         _contextService = contextService;
     }
