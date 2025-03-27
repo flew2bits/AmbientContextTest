@@ -28,6 +28,9 @@ public class RequireAmbientContextAttribute(string? policy = null) : Attribute
     public string? Policy { get; } = policy;
 }
 
+[AttributeUsage(AttributeTargets.Class)]
+public class InjectAmbientContextAttribute : Attribute;
+
 // Service to manage ambient context
 public class AmbientContextService(IHttpContextAccessor httpContextAccessor)
 {
@@ -126,18 +129,20 @@ public class AmbientContextOptions
 {
     public Dictionary<string, Predicate<AmbientContext>> Policies { get; } = new()
     {
-        ["__DEFAULT__"] = ctx => ctx.IsComplete
+        ["__DEFAULT__"] = ctx => ctx.IsComplete,
+        ["__ANY__"] = _ => true
     };
 }
 
 // Middleware to enforce ambient context
 public class AmbientContextMiddleware(RequestDelegate next, string contextSetupPath)
 {
-    public async Task InvokeAsync(HttpContext context, AmbientContextService contextService, IOptions<AmbientContextOptions> options)
+    public async Task InvokeAsync(HttpContext context, AmbientContextService contextService, IOptions<AmbientContextOptions> options, ILogger<AmbientContextMiddleware> logger)
     {
         // Skip for the context setup page itself to avoid redirect loops
         if (context.Request.Path.StartsWithSegments(contextSetupPath, StringComparison.OrdinalIgnoreCase))
         {
+            context.Items["AmbientContext"] = await contextService.GetContextAsync(context);;
             await next(context);
             return;
         }
@@ -147,12 +152,20 @@ public class AmbientContextMiddleware(RequestDelegate next, string contextSetupP
         
         // Check if the endpoint requires ambient context
         var requireContextAttribute = endpoint?.Metadata.GetMetadata<RequireAmbientContextAttribute>();
+        var injectContextAttribute = endpoint?.Metadata.GetMetadata<InjectAmbientContextAttribute>();
+
+        var policyName = requireContextAttribute?.Policy ??
+                         (injectContextAttribute is not null ? "__ANY__" : "__DEFAULT__");
         
-        if (requireContextAttribute != null)
+        if (requireContextAttribute != null && injectContextAttribute != null)
+        {
+            logger.LogWarning("Only one of InjectAmbientContext or RequireAmbientContext should be applied to a class");
+        }
+        
+        if (requireContextAttribute is not null || injectContextAttribute is not null)
         {
             var ambientContext = await contextService.GetContextAsync(context);
 
-            var policyName = requireContextAttribute.Policy ?? "__DEFAULT__";
             if (!options.Value.Policies.TryGetValue(policyName, out var policyPredicate))
                 throw new InvalidOperationException($"Could not find ambient context policy named {policyName}");
             

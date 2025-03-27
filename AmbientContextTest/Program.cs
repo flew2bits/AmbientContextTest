@@ -22,8 +22,15 @@ builder.Services.Configure<AmbientContextOptions>(opt =>
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie();
 
+builder.Services.Configure<ForwardedHeadersOptions>(opt =>
+{
+    opt.KnownNetworks.Clear();
+    opt.KnownProxies.Clear();
+});
+
 var app = builder.Build();
 
+app.UseForwardedHeaders();
 app.UsePathBase("/Ambient");
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
