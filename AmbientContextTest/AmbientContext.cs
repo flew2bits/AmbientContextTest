@@ -33,11 +33,11 @@ public class AmbientContextService(IHttpContextAccessor httpContextAccessor)
     {
         // First, check if the user is authenticated and has claims-based context
         if (httpContext.User.Identity?.IsAuthenticated == true && 
-            httpContext.User.HasClaim(c => c is { Type: "user_type", Value: "type1" }))
+            httpContext.User.HasClaim(c => c is { Type: "UserType", Value: "Parent" }))
         {
             // For Type 1 users, get context from claims
-            var hidClaim = httpContext.User.FindFirst("hid");
-            var pidClaim = httpContext.User.FindFirst("pid");
+            var hidClaim = httpContext.User.FindFirst("PrimaryHouseholdId");
+            var pidClaim = httpContext.User.FindFirst("PersonId");
             
             return new AmbientContext(
                 hidClaim != null ? int.Parse(hidClaim.Value) : null,

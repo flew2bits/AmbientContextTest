@@ -1,4 +1,7 @@
+using System.Security.Claims;
 using AmbientContextTest;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +18,9 @@ builder.Services.Configure<AmbientContextOptions>(opt =>
     opt.Policies.Add("ParentIdRequired", a => a.Pid.HasValue);
     opt.Policies.Add("AllowEmpty", _ => true);
 });
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie();
 
 var app = builder.Build();
 
@@ -37,4 +43,30 @@ app.MapStaticAssets();
 app.MapRazorPages()
     .WithStaticAssets();
 
+app.MapGet("/Login", (Delegate)Login);
+app.MapGet("/Logout", (Delegate)Logout);
+
 app.Run();
+return;
+
+async Task<IResult> Login(HttpContext ctx)
+{
+    var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
+    identity.AddClaim(new Claim(ClaimTypes.Upn, "123456"));
+    identity.AddClaim(new Claim(ClaimTypes.Name, "Parent Account"));
+    identity.AddClaim(new Claim("UserType", "Parent"));
+    identity.AddClaim(new Claim("PersonId", "123456"));
+    identity.AddClaim(new Claim("PrimaryHouseholdId", "31412"));
+
+    var principal = new ClaimsPrincipal(identity);
+
+    await ctx.SignInAsync(principal);
+    
+    return Results.Redirect("/");
+}
+
+async Task<IResult> Logout(HttpContext ctx)
+{
+    await ctx.SignOutAsync();
+    return Results.Redirect("/");
+}
