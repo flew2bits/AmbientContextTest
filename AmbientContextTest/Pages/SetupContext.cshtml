@@ -1,0 +1,18 @@
+﻿@page
+@model AmbientContextTest.Pages.SetupContextModel
+
+@{
+}
+
+<form method="post">
+    <div class="mb-2">
+        <label class="form-label" asp-for="Hid">Household Id</label>
+        <input type="text" asp-for="Hid" class="form-control" />
+    </div>
+    <div class="mb-2">
+        <label class="form-label" asp-for="Pid">Person Id</label>
+        <input type="text" asp-for="Pid" class="form-control" />
+    </div>
+    <button type="submit" class="btn btn-primary">Set</button>
+    <button type="submit" class="btn btn-warning" asp-page-handler="Clear">Clear</button>
+</form>
