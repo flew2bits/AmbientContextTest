@@ -1,14 +1,23 @@
 ﻿@model AmbientContext?
 
-@if (Model is not null && (Model.Pid.HasValue || Model.Hid.HasValue))
+@if (Model is not null)
 {
-    <div class="sticky-top bg-success py-3 h3 fw-bold text-white text-center">
-        AMBIENT CONTEXT - H: @(Model.Hid?.ToString() ?? "N/A") P: @(Model.Pid?.ToString() ?? "N/A")
-    </div>
+    if (Model.Pid.HasValue || Model.Hid.HasValue)
+    {
+        <div class="sticky-top bg-success py-3 h3 fw-bold text-white text-center">
+            AMBIENT CONTEXT - H: @(Model.Hid?.ToString() ?? "N/A") P: @(Model.Pid?.ToString() ?? "N/A")
+        </div>
+    }
+    else
+    {
+        <div class="sticky-top bg-warning py-3 h3 fw-bold text-center">
+            EMPTY AMBIENT CONTEXT
+        </div>
+    }
 }
 else
 {
-    <div class="sticky-top bg-warning py-3 h3 fw-bold text-dark text-center bg-gradient">
+    <div class="sticky-top bg-danger py-3 h3 fw-bold text-dark text-center bg-gradient">
         NO AMBIENT CONTEXT
     </div>
 }
