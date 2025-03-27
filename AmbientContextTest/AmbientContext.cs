@@ -68,7 +68,7 @@ public class AmbientContextService(IHttpContextAccessor httpContextAccessor)
     {
         // For type 1 users, we don't need to do anything as context comes from claims
         if (httpContext.User.Identity?.IsAuthenticated == true && 
-            httpContext.User.HasClaim(c => c is { Type: "user_type", Value: "type1" }))
+            httpContext.User.HasClaim(c => c is { Type: "UserType", Value: "Parent" }))
         {
             return;
         }
