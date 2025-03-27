@@ -24,6 +24,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 var app = builder.Build();
 
+app.UsePathBase("/Ambient");
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -31,7 +32,6 @@ if (!app.Environment.IsDevelopment())
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
-
 app.UseHttpsRedirection();
 
 app.UseRouting();
@@ -62,11 +62,11 @@ async Task<IResult> Login(HttpContext ctx)
 
     await ctx.SignInAsync(principal);
     
-    return Results.Redirect("/");
+    return Results.Redirect("~/");
 }
 
 async Task<IResult> Logout(HttpContext ctx)
 {
     await ctx.SignOutAsync();
-    return Results.Redirect("/");
+    return Results.Redirect("~/");
 }
