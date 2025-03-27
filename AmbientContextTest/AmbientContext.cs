@@ -4,16 +4,21 @@ using Microsoft.Extensions.Options;
 
 namespace AmbientContextTest;
 
-public record AmbientContext(int? Hid, int? Pid)
+public enum AmbientContextSource
 {
-    public bool IsComplete => Hid.HasValue && Pid.HasValue;
+    None,
+    Claims,
+    Cookie
+}
+
+public record AmbientContext(AmbientContextSource Source, int? Hid, int? Pid)
+{
+    public bool IsComplete => Source != AmbientContextSource.None && Hid.HasValue && Pid.HasValue;
     
     // Creates a new context by updating properties of the current one
-    public AmbientContext With(int? hid = null, int? pid = null) => 
-        new AmbientContext(
-            hid ?? Hid,
-            pid ?? Pid
-        );
+    public AmbientContext With(int? hid = null, int? pid = null) => this with { Hid = hid ?? Hid, Pid = pid ?? Pid };
+
+    public static AmbientContext Empty => new(AmbientContextSource.None, null, null);
 }
 
 // Attribute to mark page models that require ambient context
@@ -40,6 +45,7 @@ public class AmbientContextService(IHttpContextAccessor httpContextAccessor)
             var pidClaim = httpContext.User.FindFirst("PersonId");
             
             return new AmbientContext(
+                AmbientContextSource.Claims,
                 hidClaim != null ? int.Parse(hidClaim.Value) : null,
                 pidClaim != null ? int.Parse(pidClaim.Value) : null
             );
@@ -47,12 +53,13 @@ public class AmbientContextService(IHttpContextAccessor httpContextAccessor)
 
         // For Type 2 users, get context from cookie
         if (!httpContext.Request.Cookies.TryGetValue(CookieName, out var contextJson))
-            return new AmbientContext(null, null);
+            return AmbientContext.Empty;
         try
         {
             var contextValues = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(contextJson);
                     
             return new AmbientContext(
+                AmbientContextSource.Cookie,
                 contextValues.TryGetValue("hid", out var hid) ? hid : null,
                 contextValues.TryGetValue("pid", out var pid) ? pid : null
             );
@@ -60,7 +67,7 @@ public class AmbientContextService(IHttpContextAccessor httpContextAccessor)
         catch
         {
             // Invalid cookie format
-            return new AmbientContext(null, null);
+            return AmbientContext.Empty;
         }
     }
 
@@ -100,7 +107,7 @@ public class AmbientContextService(IHttpContextAccessor httpContextAccessor)
     public async Task ClearContextAsync(HttpContext httpContext)
     {
         if (httpContext.User.Identity?.IsAuthenticated == true && 
-            httpContext.User.HasClaim(c => c is { Type: "user_type", Value: "type1" }))
+            httpContext.User.HasClaim(c => c is { Type: "UserType", Value: "Parent" }))
         {
             return;
         }

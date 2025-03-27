@@ -40,7 +40,7 @@ public class SetupContextModel : PageModel
         }
         
         // Update the context with provided values
-        var context = new AmbientContext(Hid, Pid);
+        var context = new AmbientContext(AmbientContextSource.None, Hid, Pid);
         await _contextService.SetContextAsync(HttpContext, context);
         
         // Redirect back to the originally requested page
