@@ -13,6 +13,7 @@ builder.Services.Configure<AmbientContextOptions>(opt =>
 {
     opt.Policies.Add("Partial", a => a.Hid.HasValue || a.Pid.HasValue);
     opt.Policies.Add("ParentIdRequired", a => a.Pid.HasValue);
+    opt.Policies.Add("AllowEmpty", _ => true);
 });
 
 var app = builder.Build();
